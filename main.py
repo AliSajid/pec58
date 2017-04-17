@@ -24,7 +24,7 @@ parser.add_option("-e", "--end-num", dest="end", type="int", default=10000000)
 #    parser.error("incorrect number of arguments")
 
 RollNo = namedtuple("RollNo", ['roll_no1', 'roll_no2', 'roll_no3', "search"])
-DBNAME = "data-{:0<8}-{:0<8}.sqlite".format(options.start, options.end)
+DBNAME = "data-{:0>8}-{:0>8}.sqlite".format(options.start, options.end)
 DIRNAME = "data"
 
 print(options.start)
