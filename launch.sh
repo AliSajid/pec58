@@ -1,8 +1,8 @@
 #! /bin/bash
 
-read -a nums <<<$(seq 0 625000 10000000)
+read -a nums <<<$(seq 0 1000000 10000000)
 
-for ((i=0; i <= 15; i++))
+for ((i=0; i <= 9; i++))
 do
-    echo "nohup python main.py -s ${nums[i]} -e ${nums[i+1]} >> logs/data-"${nums[i]}"-"${nums[i+1]}".log &"
+    nohup python main.py -s ${nums[i]} -e ${nums[i+1]} >> logs/data-"${nums[i]}"-"${nums[i+1]}".log &
 done
