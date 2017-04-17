@@ -27,9 +27,9 @@ RollNo = namedtuple("RollNo", ['roll_no1', 'roll_no2', 'roll_no3', "search"])
 DBNAME = "data-{:0>8}-{:0>8}.sqlite".format(options.start, options.end)
 DIRNAME = "data"
 
-print(options.start)
-print(options.end)
-print(DBNAME)
+print("Start Parameter is: {}".format(options.start))
+print("End Parameter is: {}".format(options.end))
+print("Saving data to database {}".format(DBNAME))
 
 db = orm.Database()
 db.bind('sqlite', path.join(DIRNAME, DBNAME), create_db=True)
@@ -89,15 +89,24 @@ def download_data(from_num, to_num):
     INVALID_RESULT = "No Result found"
     with orm.db_session:
         last_record = orm.max(r.id for r in Record)
+
+        if last_record == to_num:
+            print("No new data to download. Exiting...")
+            return
+
         if last_record:
             last_roll_num = RollNo(
-                *orm.select((r.rollno1, r.rollno2, r.rollno3) for r in Record if r.id == last_record)[:][0])
+                *list(orm.select((r.rollno1, r.rollno2, r.rollno3) for r in Record if r.id == last_record)[:][0]) + [
+                    ""])
             start = rnlist.index(last_roll_num) + 1
         else:
             start = from_num
 
+
     print("Starting the Brute Force Search from position {}".format(start))
-    for rn in rnlist[start:to_num]:
+    for idx, rn in enumerate(rnlist[start:to_num]):
+        if idx % 25 == 0:
+            print("Downloading data for Roll No. {}".format("-".join(rn[:3])))
         visit(URL, rn, invalid=INVALID_RESULT)
 
 
