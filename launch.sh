@@ -1,8 +1,9 @@
 #! /bin/bash
 
-read -a nums <<<$(seq 0 1000000 10000000)
+read -a nums <<<$(seq 0 625000 10000000)
 
-for ((i=0; i <= 9; i++))
+for ((i=0; i <= 15; i++))
 do
     nohup python main.py -s ${nums[i]} -e ${nums[i+1]} >> logs/data-"${nums[i]}"-"${nums[i+1]}".log &
+    wait
 done
