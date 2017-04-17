@@ -111,7 +111,7 @@ def download_data(from_num, to_num):
 
     for idx, rn in enumerate(rnlist[start:to_num]):
         if idx % 25 == 0:
-            print("Downloading data for Roll No. {}".format("-".join(rn[:3])))
+            print("{} Downloading data for Roll No. {}".format(time.strftime("%c"), "-".join(rn[:3])))
         visit(URL, rn, invalid=INVALID_RESULT, idx=rnlist.index(rn))
     print("Process ended at {}".format(time.strftime('%c')))
 
