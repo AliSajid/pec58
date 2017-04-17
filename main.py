@@ -7,9 +7,9 @@ Website. This site achieves that by doing the following:
 by the roll number, otherwise it commits a NULL to it.
 3. After the run is complete, it takes the db and processes the data.
 """
-
 from collections import namedtuple
 from optparse import OptionParser
+from os import path
 
 from pony import orm
 from requests import post
@@ -25,13 +25,14 @@ parser.add_option("-e", "--end-num", dest="end", type="int", default=10000000)
 
 RollNo = namedtuple("RollNo", ['roll_no1', 'roll_no2', 'roll_no3', "search"])
 DBNAME = "data-{:0<8}-{:0<8}.sqlite".format(options.start, options.end)
+DIRNAME = "data"
 
 print(options.start)
 print(options.end)
 print(DBNAME)
 
 db = orm.Database()
-db.bind('sqlite', DBNAME, create_db=True)
+db.bind('sqlite', path.join(DIRNAME, DBNAME), create_db=True)
 
 
 class Record(db.Entity):
