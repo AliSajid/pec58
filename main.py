@@ -66,7 +66,7 @@ def visit(browser, url, rollno, invalid):
 #
 #     return result_only
 
-def download_data():
+def download_data(from_num=5000000, to_num=10000000):
     rn1 = [str(x).zfill(2) for x in range(0, 100)]
     rn2 = [str(x).zfill(3) for x in range(0, 100)]
     rn3 = [str(x).zfill(3) for x in range(0, 100)]
@@ -84,10 +84,10 @@ def download_data():
                 *orm.select((r.rollno1, r.rollno2, r.rollno3) for r in Record if r.id == last_record)[:][0])
             start = rnlist.index(last_roll_num) + 1
         else:
-            start = 0
+            start = from_num
 
     print("Starting the Brute Force Search from position {}".format(start))
-    for rn in rnlist[start:]:
+    for rn in rnlist[start:to_num]:
         visit(BROWSER, URL, rn, invalid=INVALID_RESULT)
 
 
