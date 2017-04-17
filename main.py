@@ -21,45 +21,6 @@ parser.add_option("-s", "--start-num", dest="start", type="int", default=0)
 parser.add_option("-e", "--end-num", dest="end", type="int", default=10000000)
 (options, args) = parser.parse_args()
 
-# if len(args) != 2:
-#    parser.error("incorrect number of arguments")
-
-RollNo = namedtuple("RollNo", ['roll_no1', 'roll_no2', 'roll_no3', "search"])
-DBNAME = "data-{:0>8}-{:0>8}.sqlite".format(options.start, options.end)
-DIRNAME = "data"
-
-db = orm.Database()
-db.bind('sqlite', path.join(DIRNAME, DBNAME), create_db=True)
-
-
-class Record(db.Entity):
-    idx = orm.Required(int)
-    rollno1 = orm.Required(str)
-    rollno2 = orm.Required(str)
-    rollno3 = orm.Required(str)
-    html = orm.Required(str)
-    error = orm.Required(bool)
-
-
-db.generate_mapping(create_tables=True)
-
-
-@orm.db_session
-def visit(url, rollno, invalid, idx):
-    """
-    This method visits the given site, fills the form, checks if a valid result is generated, adds the valid result 
-    and the valid roll number to the valid dict and valid list respectively.
-    
-    :param url: 
-    :param rollno: 
-    :param invalid: 
-    """
-    res = post(url, rollno._asdict())
-    if res.text.find(invalid) != -1:
-        Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html="NULL", error=True, idx=idx)
-    else:
-        Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html=res.text, error=False, idx=idx)
-
 
 # def process_data(results):
 #     """
@@ -81,13 +42,45 @@ def download_data(from_num, to_num):
     rn2 = [str(x).zfill(3) for x in range(0, 100)]
     rn3 = [str(x).zfill(3) for x in range(0, 100)]
 
-    rnlist = [RollNo(a, b, c, "") for a in rn1 for b in rn2 for c in rn3]
+    RollNo = namedtuple("RollNo", ['roll_no1', 'roll_no2', 'roll_no3', "search"])
 
+    RNLIST = [RollNo(a, b, c, "") for a in rn1 for b in rn2 for c in rn3]
+    DBNAME = "data-{:0>8}-{:0>8}.sqlite".format(from_num, to_num)
+    DIRNAME = "data"
     URL = "http://pec.edu.pk"
     INVALID_RESULT = "No Result found"
 
-    print("Start Parameter is: {}".format(options.start))
-    print("End Parameter is: {}".format(options.end))
+    db = orm.Database()
+    db.bind('sqlite', path.join(DIRNAME, DBNAME), create_db=True)
+
+    class Record(db.Entity):
+        idx = orm.Required(int)
+        rollno1 = orm.Required(str)
+        rollno2 = orm.Required(str)
+        rollno3 = orm.Required(str)
+        html = orm.Required(str)
+        error = orm.Required(bool)
+
+    db.generate_mapping(create_tables=True)
+
+    @orm.db_session
+    def visit(url, rollno, invalid, idx):
+        """
+        This method visits the given site, fills the form, checks if a valid result is generated, adds the valid result 
+        and the valid roll number to the valid dict and valid list respectively.
+
+        :param url: 
+        :param rollno: 
+        :param invalid: 
+        """
+        res = post(url, rollno._asdict())
+        if res.text.find(invalid) != -1:
+            Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html="NULL", error=True, idx=idx)
+        else:
+            Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html=res.text, error=False, idx=idx)
+
+    print("Start Parameter is: {}".format(from_num))
+    print("End Parameter is: {}".format(to_num))
     print("Saving data to database {}".format(DBNAME))
 
     with orm.db_session:
@@ -101,7 +94,7 @@ def download_data(from_num, to_num):
             last_roll_num = RollNo(
                 *list(orm.select((r.rollno1, r.rollno2, r.rollno3) for r in Record if r.id == last_record)[:][0]) + [
                     ""])
-            start = rnlist.index(last_roll_num) + 1
+            start = RNLIST.index(last_roll_num) + 1
         else:
             start = from_num
 
@@ -109,11 +102,12 @@ def download_data(from_num, to_num):
     print("Starting the Brute Force Search from position {}".format(start))
     print("Process started at {}".format(time.strftime('%c')))
 
-    for idx, rn in enumerate(rnlist[start:to_num]):
+    for idx, rn in enumerate(RNLIST[start:to_num]):
         if idx % 25 == 0:
             print("{} Downloading data for Roll No. {}".format(time.strftime("%c"), "-".join(rn[:3])))
-        visit(URL, rn, invalid=INVALID_RESULT, idx=rnlist.index(rn))
+        visit(URL, rn, invalid=INVALID_RESULT, idx=RNLIST.index(rn))
     print("Process ended at {}".format(time.strftime('%c')))
 
 
-download_data(options.start, options.end)
+if __name__ == '__main__':
+    download_data(options.start, options.end)
