@@ -7,6 +7,7 @@ Website. This site achieves that by doing the following:
 by the roll number, otherwise it commits a NULL to it.
 3. After the run is complete, it takes the db and processes the data.
 """
+import time
 from collections import namedtuple
 from optparse import OptionParser
 from os import path
@@ -27,15 +28,12 @@ RollNo = namedtuple("RollNo", ['roll_no1', 'roll_no2', 'roll_no3', "search"])
 DBNAME = "data-{:0>8}-{:0>8}.sqlite".format(options.start, options.end)
 DIRNAME = "data"
 
-print("Start Parameter is: {}".format(options.start))
-print("End Parameter is: {}".format(options.end))
-print("Saving data to database {}".format(DBNAME))
-
 db = orm.Database()
 db.bind('sqlite', path.join(DIRNAME, DBNAME), create_db=True)
 
 
 class Record(db.Entity):
+    idx = orm.Required(int)
     rollno1 = orm.Required(str)
     rollno2 = orm.Required(str)
     rollno3 = orm.Required(str)
@@ -47,7 +45,7 @@ db.generate_mapping(create_tables=True)
 
 
 @orm.db_session
-def visit(url, rollno, invalid):
+def visit(url, rollno, invalid, idx):
     """
     This method visits the given site, fills the form, checks if a valid result is generated, adds the valid result 
     and the valid roll number to the valid dict and valid list respectively.
@@ -58,9 +56,9 @@ def visit(url, rollno, invalid):
     """
     res = post(url, rollno._asdict())
     if res.text.find(invalid) != -1:
-        Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html="NULL", error=True)
+        Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html="NULL", error=True, idx=idx)
     else:
-        Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html=res.text, error=False)
+        Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html=res.text, error=False, idx=idx)
 
 
 # def process_data(results):
@@ -87,6 +85,11 @@ def download_data(from_num, to_num):
 
     URL = "http://pec.edu.pk"
     INVALID_RESULT = "No Result found"
+
+    print("Start Parameter is: {}".format(options.start))
+    print("End Parameter is: {}".format(options.end))
+    print("Saving data to database {}".format(DBNAME))
+
     with orm.db_session:
         last_record = orm.max(r.id for r in Record)
 
@@ -104,10 +107,12 @@ def download_data(from_num, to_num):
 
 
     print("Starting the Brute Force Search from position {}".format(start))
+    print("Process started at {}".format(time.strftime('%c')))
+
     for idx, rn in enumerate(rnlist[start:to_num]):
         if idx % 25 == 0:
             print("Downloading data for Roll No. {}".format("-".join(rn[:3])))
-        visit(URL, rn, invalid=INVALID_RESULT)
+        visit(URL, rn, invalid=INVALID_RESULT, idx=idx)
 
 
 download_data(options.start, options.end)
