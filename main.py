@@ -9,12 +9,26 @@ by the roll number, otherwise it commits a NULL to it.
 """
 
 from collections import namedtuple
+from optparse import OptionParser
 
 from pony import orm
-from splinter import Browser
+from requests import post
 
-RollNo = namedtuple("RollNo", ['roll_no1', 'roll_no2', 'roll_no3'])
-DBNAME = "data.sqlite"
+parser = OptionParser()
+
+parser.add_option("-s", "--start-num", dest="start", type="int", default=0)
+parser.add_option("-e", "--end-num", dest="end", type="int", default=10000000)
+(options, args) = parser.parse_args()
+
+# if len(args) != 2:
+#    parser.error("incorrect number of arguments")
+
+RollNo = namedtuple("RollNo", ['roll_no1', 'roll_no2', 'roll_no3', "search"])
+DBNAME = "data-{:0<8}-{:0<8}.sqlite".format(options.start, options.end)
+
+print(options.start)
+print(options.end)
+print(DBNAME)
 
 db = orm.Database()
 db.bind('sqlite', DBNAME, create_db=True)
@@ -32,23 +46,20 @@ db.generate_mapping(create_tables=True)
 
 
 @orm.db_session
-def visit(browser, url, rollno, invalid):
+def visit(url, rollno, invalid):
     """
     This method visits the given site, fills the form, checks if a valid result is generated, adds the valid result 
     and the valid roll number to the valid dict and valid list respectively.
     
-    :param browser: 
     :param url: 
     :param rollno: 
     :param invalid: 
     """
-    browser.visit(url)
-    browser.fill_form(rollno._asdict())
-    browser.find_by_name("search").click()
-    if browser.is_text_present(invalid):
+    res = post(url, rollno._asdict())
+    if res.text.find(invalid) != -1:
         Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html="NULL", error=True)
     else:
-        Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html=browser.html, error=False)
+        Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html=res.text, error=False)
 
 
 # def process_data(results):
@@ -66,17 +77,15 @@ def visit(browser, url, rollno, invalid):
 #
 #     return result_only
 
-def download_data(from_num=5000000, to_num=10000000):
+def download_data(from_num, to_num):
     rn1 = [str(x).zfill(2) for x in range(0, 100)]
     rn2 = [str(x).zfill(3) for x in range(0, 100)]
     rn3 = [str(x).zfill(3) for x in range(0, 100)]
 
-    rnlist = [RollNo(a, b, c) for a in rn1 for b in rn2 for c in rn3]
+    rnlist = [RollNo(a, b, c, "") for a in rn1 for b in rn2 for c in rn3]
 
     URL = "http://pec.edu.pk"
-    DRIVER = "chrome"
     INVALID_RESULT = "No Result found"
-    BROWSER = Browser(DRIVER)
     with orm.db_session:
         last_record = orm.max(r.id for r in Record)
         if last_record:
@@ -88,7 +97,7 @@ def download_data(from_num=5000000, to_num=10000000):
 
     print("Starting the Brute Force Search from position {}".format(start))
     for rn in rnlist[start:to_num]:
-        visit(BROWSER, URL, rn, invalid=INVALID_RESULT)
+        visit(URL, rn, invalid=INVALID_RESULT)
 
 
-download_data()
+download_data(options.start, options.end)
