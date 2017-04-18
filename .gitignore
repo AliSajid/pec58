@@ -1,4 +1,5 @@
-.idea/*
 .idea/
 *.sqlite
 *.log
+Dockerfile
+data.bak/
