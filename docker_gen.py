@@ -11,7 +11,9 @@ FROM continuumio/miniconda3
 
 WORKDIR /app
 
-RUN git clone https://github.com/AliSajid/pec58.git
+RUN git clone https://github.com/AliSajid/pec58.git pec58c
+
+RUN cp pec58c/* pec58/*
 
 RUN pip install -r pec58/requirements.txt
 
