@@ -11,13 +11,15 @@ FROM continuumio/miniconda3
 
 WORKDIR /app
 
-RUN git clone https://github.com/AliSajid/pec58.git pec58c
+RUN apt-get update
 
-RUN cp pec58c/* pec58/*
+RUN apt-get install sqlite3
+
+RUN git clone https://github.com/AliSajid/pec58.git
 
 RUN pip install -r pec58/requirements.txt
 
-CMD ["python", "main.py -s {} -e {}"]
+CMD ["python", "/app/pec58/main.py", "-s {}", "-e {}"]
 """
 
 for idx, pair in enumerate(bounds):
