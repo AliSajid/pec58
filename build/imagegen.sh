@@ -5,6 +5,6 @@ do
  num=$(echo $file | tail -c 3)
  echo $num
  cd $file
- echo "docker build -t pec58/range${num}:1.0 ."
+ docker build -t pec58/range${num}:1.0 .
  cd ..
 done
