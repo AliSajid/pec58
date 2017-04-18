@@ -7,6 +7,7 @@ Website. This site achieves that by doing the following:
 by the roll number, otherwise it commits a NULL to it.
 3. After the run is complete, it takes the db and processes the data.
 """
+import logging
 import time
 from collections import namedtuple
 from optparse import OptionParser
@@ -15,14 +16,29 @@ from os import path
 from pony import orm
 from requests import post
 
+# Setting up the option parser
 parser = OptionParser()
 
 parser.add_option("-s", "--start-num", dest="start", type="int", default=0)
 parser.add_option("-e", "--end-num", dest="end", type="int", default=10000000)
 (options, args) = parser.parse_args()
 
+# Setting up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+handler = logging.FileHandler(path.join("logs", "data-{:0>8}-{:0>8}.log".format(options.start, options.end)))
+
+# create a logging format
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+# add the handlers to the logger
+logger.addHandler(handler)
+
+# Named tuple for RollNo
 RollNo = namedtuple("RollNo", ['roll_no1', 'roll_no2', 'roll_no3', "search"])
 
+# Database Setup
 DBNAME = "data-{:0>8}-{:0>8}.sqlite".format(options.start, options.end)
 DIRNAME = "data"
 
@@ -85,17 +101,16 @@ def download_data(bounds):
     URL = "http://pec.edu.pk"
     INVALID_RESULT = "No Result found"
 
-
-    print("Start Parameter is: {}".format(from_num))
-    print("End Parameter is: {}".format(to_num))
-    print("Saving data to database {}".format(DBNAME))
+    logger.info("Start Parameter is: {}".format(from_num))
+    logger.info("End Parameter is: {}".format(to_num))
+    logger.info("Saving data to database {}".format(DBNAME))
 
     try:
         with orm.db_session:
             last_record = orm.max(r.id for r in Record)
 
             if last_record == to_num:
-                print("No new data to download. Exiting...")
+                logger.info("No new data to download. Exiting...")
                 return
 
             if last_record:
@@ -104,16 +119,16 @@ def download_data(bounds):
             else:
                 start = from_num
 
-        print("Starting the Brute Force Search from position {}".format(start))
-        print("Process started at {}".format(time.strftime('%c')))
+        logger.info("Starting the Brute Force Search from position {}".format(start))
+        logger.info("Process started at {}".format(time.strftime('%c')))
 
         for idx, rn in enumerate(RNLIST[start:to_num]):
             if idx % 25 == 0:
-                print("{} Downloading data for Roll No. {}".format(time.strftime("%c"), "-".join(rn[:3])))
+                logger.info("{} Downloading data for Roll No. {}".format(time.strftime("%c"), "-".join(rn[:3])))
             visit(URL, rn, invalid=INVALID_RESULT, idx=RNLIST.index(rn))
         print("Process ended at {}".format(time.strftime('%c')))
     except KeyboardInterrupt:
-        print("Recieved Keyboard Interrupt. Exiting.")
+        logger.error("Recieved Keyboard Interrupt. Exiting.")
 
 if __name__ == '__main__':
     download_data((options.start, options.end))
