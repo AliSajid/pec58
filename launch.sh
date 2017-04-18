@@ -1,9 +1,8 @@
 #! /bin/bash
 
-read -a nums <<<$(seq 0 625000 10000000)
-
-for ((i=0; i <= 15; i++))
+for file in $(find /d/experiments/pec58/build/ -maxdepth 1 -mindepth 1 -type d)
 do
-    nohup python main.py -s ${nums[i]} -e ${nums[i+1]} >> logs/data-"${nums[i]}"-"${nums[i+1]}".log &
-    wait
+ num=$(echo $file | tail -c 3)
+ echo $num
+ echo "docker start -d -v /d/experiments/pec58/data:/app/pec58/data -v /d/experiments/pec58/logs:/app/pec58/logs --name worker${num} pec58/image${num}"
 done
