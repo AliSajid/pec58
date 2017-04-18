@@ -123,10 +123,10 @@ def download_data(bounds):
         logger.info("Process started at {}".format(time.strftime('%c')))
 
         for idx, rn in enumerate(RNLIST[start:to_num]):
-            if idx % 25 == 0:
-                logger.info("{} Downloading data for Roll No. {}".format(time.strftime("%c"), "-".join(rn[:3])))
+            if idx % 10 == 0:
+                logger.info("Downloading data for Roll No. {}".format("-".join(rn[:3])))
             visit(URL, rn, invalid=INVALID_RESULT, idx=RNLIST.index(rn))
-        print("Process ended at {}".format(time.strftime('%c')))
+        logger.info("Process ended.")
     except KeyboardInterrupt:
         logger.error("Recieved Keyboard Interrupt. Exiting.")
 
