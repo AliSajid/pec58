@@ -68,12 +68,14 @@ def visit(url, rollno, invalid, idx):
     :param rollno: 
     :param invalid: 
     """
-    res = post(url, rollno._asdict())
-    if res.text.find(invalid) != -1:
+    try:
+        res = post(url, rollno._asdict())
+        if res.text.find(invalid) != -1:
+            Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html="NULL", error=True, idx=idx)
+        else:
+            Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html=res.text, error=False, idx=idx)
+    except:
         Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html="NULL", error=True, idx=idx)
-    else:
-        Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html=res.text, error=False, idx=idx)
-
 
 # def process_data(results):
 #     """
