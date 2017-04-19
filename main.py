@@ -70,20 +70,6 @@ class Record(db.Entity):
 
 db.generate_mapping(create_tables=True)
 
-
-# def generate_rollnums():
-#     filename = "rollnums.pickle"
-#     rn1 = [str(x).zfill(2) for x in range(0, 100)]
-#     rn2 = [str(x).zfill(3) for x in range(0, 1000)]
-#     rn3 = [str(x).zfill(3) for x in range(0, 1000)]
-#
-#     logger.info("Generating the list of Roll Numbers")
-#     rollnums = [RollNo(a, b, c, "") for a in rn1 for b in rn2 for c in rn3]
-#     with open(filename, 'wb') as f:
-#         pickle.dump(rollnums, f)
-#         logger.info("Dumped Roll Numbers for future speediness")
-#     return rollnums
-
 @orm.db_session
 def visit(url, rollno, invalid, idx):
     """
@@ -104,22 +90,8 @@ def visit(url, rollno, invalid, idx):
         logger.error(str(e))
         Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html="NULL", error=True, idx=idx)
 
-# def process_data(results):
-#     """
-#     Iterate through the list of results, extract the data and return it in a list of namedtuples.
-#     :param results:
-#     :return: list of namedtuples.
-#     """
-#
-#     result_only = {}
-#     for key, item in results.items():
-#         soup = BeautifulSoup(item, "lxml")
-#         soup = soup.find("div", class_="container")
-#         result_only[key] = soup
-#
-#     return result_only
 
-def download_data(bounds, listfile="rollnums.pickle"):
+def download_data(bounds):
     (from_num, to_num) = bounds
 
     rn1 = [str(x).zfill(2) for x in range(0, 100)]
@@ -128,14 +100,6 @@ def download_data(bounds, listfile="rollnums.pickle"):
 
     logger.info("Generating the list of Roll Numbers")
     RNLIST = [RollNo(a, b, c, "") for a in rn1 for b in rn2 for c in rn3]
-
-    # if path.isfile(listfile):
-    #     logger.info("Checking if the roll number file exists.")
-    #     with open(listfile, 'rb') as f:
-    #         logger.info("File found. Loading data.")
-    #         RNLIST = pickle.load(f)
-    # else:
-    #     RNLIST = generate_rollnums()
 
     URL = "http://pec.edu.pk"
     INVALID_RESULT = "No Result found"
