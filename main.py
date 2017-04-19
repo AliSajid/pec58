@@ -115,7 +115,7 @@ def download_data(bounds):
 
             if last_record:
                 last_idx = orm.select(r.idx for r in Record if r.id == last_record)[:][0]
-                start = RNLIST[last_idx + 1]
+                start = last_idx + 1
             else:
                 start = from_num
 
