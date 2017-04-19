@@ -8,6 +8,8 @@ by the roll number, otherwise it commits a NULL to it.
 3. After the run is complete, it takes the db and processes the data.
 """
 import logging
+import pickle
+import random
 import time
 from collections import namedtuple
 from optparse import OptionParser
@@ -15,6 +17,10 @@ from os import path
 
 from pony import orm
 from requests import post
+
+# Random wait time
+distribution = list(range(1000, 5001, 500))
+wait = random.choice(distribution)
 
 # Setting up the option parser
 parser = OptionParser()
@@ -24,16 +30,26 @@ parser.add_option("-e", "--end-num", dest="end", type="int", default=10000000)
 (options, args) = parser.parse_args()
 
 # Setting up logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    datefmt='%m-%d-%Y %H:%M:%S,',
+                    filename=path.join("logs", "data-{:0>8}-{:0>8}.log".format(options.start, options.end)),
+                    filemode='a'
+                    )
 logger = logging.getLogger(__name__)
-handler = logging.FileHandler(path.join("logs", "data-{:0>8}-{:0>8}.log".format(options.start, options.end)))
 
-# create a logging format
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
+# define a Handler which writes INFO messages or higher to the sys.stderr
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
 
-# add the handlers to the logger
-logger.addHandler(handler)
+# set a format which is simpler for console use
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+
+# tell the handler to use this format
+console.setFormatter(formatter)
+
+# add the handler to the root logger
+logger.addHandler(console)
 
 # Named tuple for RollNo
 RollNo = namedtuple("RollNo", ['roll_no1', 'roll_no2', 'roll_no3', "search"])
@@ -45,7 +61,6 @@ DIRNAME = "data"
 db = orm.Database()
 db.bind('sqlite', path.join(DIRNAME, DBNAME), create_db=True)
 
-
 class Record(db.Entity):
     idx = orm.Required(int)
     rollno1 = orm.Required(str)
@@ -54,9 +69,19 @@ class Record(db.Entity):
     html = orm.Required(str)
     error = orm.Required(bool)
 
-
 db.generate_mapping(create_tables=True)
 
+
+def generate_rollnums():
+    filename = "rollnums.pickle"
+    rn1 = [str(x).zfill(2) for x in range(0, 100)]
+    rn2 = [str(x).zfill(3) for x in range(0, 1000)]
+    rn3 = [str(x).zfill(3) for x in range(0, 1000)]
+
+    rollnums = [RollNo(a, b, c, "") for a in rn1 for b in rn2 for c in rn3]
+    with open(filename, 'wb') as f:
+        pickle.dump(rollnums, f)
+    return rollnums
 
 @orm.db_session
 def visit(url, rollno, invalid, idx):
@@ -74,7 +99,8 @@ def visit(url, rollno, invalid, idx):
             Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html="NULL", error=True, idx=idx)
         else:
             Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html=res.text, error=False, idx=idx)
-    except:
+    except Exception as e:
+        logger.error(str(e))
         Record(rollno1=rollno[0], rollno2=rollno[1], rollno3=rollno[2], html="NULL", error=True, idx=idx)
 
 # def process_data(results):
@@ -92,13 +118,14 @@ def visit(url, rollno, invalid, idx):
 #
 #     return result_only
 
-def download_data(bounds):
+def download_data(bounds, listfile=rollnums.pickle):
     (from_num, to_num) = bounds
-    rn1 = [str(x).zfill(2) for x in range(0, 100)]
-    rn2 = [str(x).zfill(3) for x in range(0, 100)]
-    rn3 = [str(x).zfill(3) for x in range(0, 100)]
 
-    RNLIST = [RollNo(a, b, c, "") for a in rn1 for b in rn2 for c in rn3]
+    if path.isfile(listfile):
+        with open(listfile, 'rb') as f:
+            RNLIST = pickle.load(f)
+    else:
+        RNLIST = generate_rollnums()
 
     URL = "http://pec.edu.pk"
     INVALID_RESULT = "No Result found"
@@ -125,11 +152,14 @@ def download_data(bounds):
         logger.info("Process started at {}".format(time.strftime('%c')))
 
         for idx, rn in enumerate(RNLIST[start:to_num]):
+            if idx % wait == 0: time.sleep(5)
             if idx % 10 == 0:
                 logger.info("Downloading data for Roll No. {}".format("-".join(rn[:3])))
+            logger.info("Downloading Roll No. {}".format("-".join(rn[:3])))
             visit(URL, rn, invalid=INVALID_RESULT, idx=RNLIST.index(rn))
-        logger.info("Process ended.")
-    except KeyboardInterrupt:
+        logger.info("Process ended at {}".format(time.strftime('%c')))
+    except KeyboardInterrupt as e:
+        logger.error(str(e))
         logger.error("Recieved Keyboard Interrupt. Exiting.")
 
 if __name__ == '__main__':
