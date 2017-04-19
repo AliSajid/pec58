@@ -7,7 +7,7 @@ lower_bounds = list(range(0, 10000000, 625000))
 upper_bounds = list(range(625000, 10000001, 625000))
 bounds = list(zip(lower_bounds, upper_bounds))
 template = """
-FROM continuumio/miniconda3
+FROM localhost:5000/continuumio/miniconda3
 
 WORKDIR /app
 

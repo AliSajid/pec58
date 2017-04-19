@@ -8,7 +8,6 @@ by the roll number, otherwise it commits a NULL to it.
 3. After the run is complete, it takes the db and processes the data.
 """
 import logging
-import pickle
 import random
 import time
 from collections import namedtuple
@@ -72,16 +71,18 @@ class Record(db.Entity):
 db.generate_mapping(create_tables=True)
 
 
-def generate_rollnums():
-    filename = "rollnums.pickle"
-    rn1 = [str(x).zfill(2) for x in range(0, 100)]
-    rn2 = [str(x).zfill(3) for x in range(0, 1000)]
-    rn3 = [str(x).zfill(3) for x in range(0, 1000)]
-
-    rollnums = [RollNo(a, b, c, "") for a in rn1 for b in rn2 for c in rn3]
-    with open(filename, 'wb') as f:
-        pickle.dump(rollnums, f)
-    return rollnums
+# def generate_rollnums():
+#     filename = "rollnums.pickle"
+#     rn1 = [str(x).zfill(2) for x in range(0, 100)]
+#     rn2 = [str(x).zfill(3) for x in range(0, 1000)]
+#     rn3 = [str(x).zfill(3) for x in range(0, 1000)]
+#
+#     logger.info("Generating the list of Roll Numbers")
+#     rollnums = [RollNo(a, b, c, "") for a in rn1 for b in rn2 for c in rn3]
+#     with open(filename, 'wb') as f:
+#         pickle.dump(rollnums, f)
+#         logger.info("Dumped Roll Numbers for future speediness")
+#     return rollnums
 
 @orm.db_session
 def visit(url, rollno, invalid, idx):
@@ -118,14 +119,23 @@ def visit(url, rollno, invalid, idx):
 #
 #     return result_only
 
-def download_data(bounds, listfile=rollnums.pickle):
+def download_data(bounds, listfile="rollnums.pickle"):
     (from_num, to_num) = bounds
 
-    if path.isfile(listfile):
-        with open(listfile, 'rb') as f:
-            RNLIST = pickle.load(f)
-    else:
-        RNLIST = generate_rollnums()
+    rn1 = [str(x).zfill(2) for x in range(0, 100)]
+    rn2 = [str(x).zfill(3) for x in range(0, 1000)]
+    rn3 = [str(x).zfill(3) for x in range(0, 1000)]
+
+    logger.info("Generating the list of Roll Numbers")
+    RNLIST = [RollNo(a, b, c, "") for a in rn1 for b in rn2 for c in rn3]
+
+    # if path.isfile(listfile):
+    #     logger.info("Checking if the roll number file exists.")
+    #     with open(listfile, 'rb') as f:
+    #         logger.info("File found. Loading data.")
+    #         RNLIST = pickle.load(f)
+    # else:
+    #     RNLIST = generate_rollnums()
 
     URL = "http://pec.edu.pk"
     INVALID_RESULT = "No Result found"
